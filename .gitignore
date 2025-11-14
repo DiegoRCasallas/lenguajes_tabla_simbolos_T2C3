@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+*.egg
+
+# Virtualenv
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+
+# mypy
+.mypy_cache/
+
+# Pyre
+.pyre/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Tools & build artifacts
+*.pyc
+*.pyo
+*.pyd
+
+# ANTLR generated ancillary files (tokens/interp) - these can be regenerated
+*.tokens
+*.interp
+
+# local env variables
+.env
+.env.*
+
+# coverage and profiling
+coverage.xml
+*.prof
+
+# Python packaging
+pip-wheel-metadata/
+
+# optional: ignore compiled Cython files
+*.c
+
+# Keep this file maintained: add project-specific build or credential files here
