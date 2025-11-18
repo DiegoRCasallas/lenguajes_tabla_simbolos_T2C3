@@ -3,146 +3,146 @@ from PythonGrammarLexer import PythonGrammarLexer
 from PythonGrammarParser import PythonGrammarParser
 from PythonGrammarVisitor import PythonGrammarVisitor
 
-class Symbol:
-    def __init__(self, name, type, scope, value=None):
-        self.name = name
-        self.type = type
-        self.scope = scope
-        self.value = value
+class Simbolo:
+    def __init__(self, nombre, tipo, ambito, valor=None):
+        self.nombre = nombre
+        self.tipo = tipo
+        self.ambito = ambito
+        self.valor = valor
         
     def __str__(self):
-        return f"{self.name} ({self.type}) - Scope: {self.scope}"
+        return f"{self.nombre} ({self.tipo}) - Ámbito: {self.ambito}"
 
-class SymbolTable:
-    def __init__(self, parent=None):
-        self.symbols = {}
-        self.parent = parent
-        self.scope_level = 0 if parent is None else parent.scope_level + 1
+class TablaSimbolos:
+    def __init__(self, padre=None):
+        self.simbolos = {}
+        self.padre = padre
+        self.nivel_ambito = 0 if padre is None else padre.nivel_ambito + 1
     
-    def add_symbol(self, symbol):
-        self.symbols[symbol.name] = symbol
+    def agregar_simbolo(self, simbolo):
+        self.simbolos[simbolo.nombre] = simbolo
     
-    def lookup(self, name):
-        if name in self.symbols:
-            return self.symbols[name]
-        elif self.parent:
-            return self.parent.lookup(name)
+    def buscar(self, nombre):
+        if nombre in self.simbolos:
+            return self.simbolos[nombre]
+        elif self.padre:
+            return self.padre.buscar(nombre)
         return None
     
     def __str__(self):
-        result = f"\n=== TABLA DE SÍMBOLOS (Nivel {self.scope_level}) ===\n"
-        for name, symbol in self.symbols.items():
-            result += f"  {symbol}\n"
+        resultado = f"\n=== TABLA DE SÍMBOLOS (Nivel {self.nivel_ambito}) ===\n"
+        for nombre, simbolo in self.simbolos.items():
+            resultado += f"  {simbolo}\n"
         
-        if not self.symbols:
-            result += "  (vacía)\n"
+        if not self.simbolos:
+            resultado += "  (vacía)\n"
             
-        return result
+        return resultado
 
-class ThreeAddressCode:
+class CodigoTresDirecciones:
     def __init__(self):
-        self.code = []
-        self.temp_counter = 0
-        self.label_counter = 0
+        self.codigo = []
+        self.contador_temporales = 0
+        self.contador_etiquetas = 0
     
-    def new_temp(self):
-        temp = f"t{self.temp_counter}"
-        self.temp_counter += 1
+    def nuevo_temporal(self):
+        temp = f"t{self.contador_temporales}"
+        self.contador_temporales += 1
         return temp
     
-    def new_label(self):
-        label = f"L{self.label_counter}"
-        self.label_counter += 1
-        return label
+    def nueva_etiqueta(self):
+        etiqueta = f"L{self.contador_etiquetas}"
+        self.contador_etiquetas += 1
+        return etiqueta
     
-    def emit(self, op, arg1=None, arg2=None, result=None):
+    def emitir(self, operador, arg1=None, arg2=None, resultado=None):
         if arg2 is not None:
-            self.code.append(f"{result} = {arg1} {op} {arg2}")
-        elif arg1 is not None and result is not None:
-            self.code.append(f"{result} = {op} {arg1}")
-        elif result is not None:
-            self.code.append(f"{result} = {op}")
+            self.codigo.append(f"{resultado} = {arg1} {operador} {arg2}")
+        elif arg1 is not None and resultado is not None:
+            self.codigo.append(f"{resultado} = {operador} {arg1}")
+        elif resultado is not None:
+            self.codigo.append(f"{resultado} = {operador}")
         elif arg1 is not None:
-            self.code.append(f"{op} {arg1}")
+            self.codigo.append(f"{operador} {arg1}")
         else:
-            self.code.append(op)
+            self.codigo.append(operador)
     
-    def get_code(self):
-        return "\n".join(self.code)
+    def obtener_codigo(self):
+        return "\n".join(self.codigo)
 
-class PythonVisitor(PythonGrammarVisitor):
+class VisitadorPython(PythonGrammarVisitor):
     def __init__(self):
-        global_symbol_table = SymbolTable()
-        self.symbol_table = global_symbol_table
-        self.tac = ThreeAddressCode()
-        self.current_scope = global_symbol_table
-        self.scopes = [global_symbol_table]
+        tabla_simbolos_global = TablaSimbolos()
+        self.tabla_simbolos = tabla_simbolos_global
+        self.cdt = CodigoTresDirecciones()
+        self.ambito_actual = tabla_simbolos_global
+        self.ambitos = [tabla_simbolos_global]
     
-    def push_scope(self):
-        new_scope = SymbolTable(self.current_scope)
-        self.scopes.append(new_scope)
-        self.current_scope = new_scope
-        return new_scope
+    def empujar_ambito(self):
+        nuevo_ambito = TablaSimbolos(self.ambito_actual)
+        self.ambitos.append(nuevo_ambito)
+        self.ambito_actual = nuevo_ambito
+        return nuevo_ambito
     
-    def pop_scope(self):
-        if len(self.scopes) > 1:
-            old_scope = self.scopes.pop()
-            self.current_scope = self.scopes[-1]
-            return old_scope
-        return self.current_scope
+    def sacar_ambito(self):
+        if len(self.ambitos) > 1:
+            ambito_anterior = self.ambitos.pop()
+            self.ambito_actual = self.ambitos[-1]
+            return ambito_anterior
+        return self.ambito_actual
     
     def visitProgram(self, ctx):
         print("\n=== PROCESANDO PROGRAMA ===")
-        results = []
-        for child in ctx.getChildren():
-            if not isinstance(child, antlr4.tree.Tree.TerminalNodeImpl):
-                result = self.visit(child)
-                if result:
-                    results.append(result)
-        return results
+        resultados = []
+        for hijo in ctx.getChildren():
+            if not isinstance(hijo, antlr4.tree.Tree.TerminalNodeImpl):
+                resultado = self.visit(hijo)
+                if resultado:
+                    resultados.append(resultado)
+        return resultados
     
     def visitAssignment(self, ctx):
-        var_name = ctx.ID().getText()
-        expr_result = self.visit(ctx.expression())
+        nombre_var = ctx.ID().getText()
+        resultado_expr = self.visit(ctx.expression())
         
         # Verificar si la variable ya existe
-        existing_symbol = self.current_scope.lookup(var_name)
-        if existing_symbol:
-            symbol_type = existing_symbol.type
+        simbolo_existente = self.ambito_actual.buscar(nombre_var)
+        if simbolo_existente:
+            tipo_simbolo = simbolo_existente.tipo
         else:
-            symbol_type = 'variable'
+            tipo_simbolo = 'variable'
         
         # Agregar/actualizar en tabla de símbolos
-        symbol = Symbol(var_name, symbol_type, self.current_scope.scope_level)
-        self.current_scope.add_symbol(symbol)
+        simbolo = Simbolo(nombre_var, tipo_simbolo, self.ambito_actual.nivel_ambito)
+        self.ambito_actual.agregar_simbolo(simbolo)
         
         # Generar código de tres direcciones
-        self.tac.emit('=', expr_result, None, var_name)
-        print(f"ASIGNACIÓN: {var_name} = {expr_result}")
-        return var_name
+        self.cdt.emitir('=', resultado_expr, None, nombre_var)
+        print(f"ASIGNACIÓN: {nombre_var} = {resultado_expr}")
+        return nombre_var
     
     def visitExpression(self, ctx):
         # Número
         if ctx.NUMBER():
-            num = ctx.NUMBER().getText()
-            print(f"EXPRESIÓN: número {num}")
-            return num
+            numero = ctx.NUMBER().getText()
+            print(f"EXPRESIÓN: número {numero}")
+            return numero
         
         # Identificador (variable)
         elif ctx.ID():
-            var_name = ctx.ID().getText()
-            symbol = self.current_scope.lookup(var_name)
-            if symbol:
-                print(f"EXPRESIÓN: variable {var_name}")
-                return var_name
+            nombre_var = ctx.ID().getText()
+            simbolo = self.ambito_actual.buscar(nombre_var)
+            if simbolo:
+                print(f"EXPRESIÓN: variable {nombre_var}")
+                return nombre_var
             else:
-                raise Exception(f"ERROR: Variable no declarada '{var_name}'")
+                raise Exception(f"ERROR: Variable no declarada '{nombre_var}'")
         
         # String
         elif ctx.STRING():
-            string_val = ctx.STRING().getText()
-            print(f"EXPRESIÓN: string {string_val}")
-            return string_val
+            valor_string = ctx.STRING().getText()
+            print(f"EXPRESIÓN: string {valor_string}")
+            return valor_string
         
         # Expresión entre paréntesis
         elif ctx.getChildCount() == 3 and ctx.getChild(0).getText() == '(':
@@ -150,193 +150,193 @@ class PythonVisitor(PythonGrammarVisitor):
         
         # Operación binaria
         else:
-            left = self.visit(ctx.expression(0))
-            right = self.visit(ctx.expression(1))
-            op = ctx.getChild(1).getText()
+            izquierda = self.visit(ctx.expression(0))
+            derecha = self.visit(ctx.expression(1))
+            operador = ctx.getChild(1).getText()
             
-            temp = self.tac.new_temp()
-            self.tac.emit(op, left, right, temp)
-            print(f"EXPRESIÓN: {left} {op} {right} -> {temp}")
+            temp = self.cdt.nuevo_temporal()
+            self.cdt.emitir(operador, izquierda, derecha, temp)
+            print(f"EXPRESIÓN: {izquierda} {operador} {derecha} -> {temp}")
             return temp
     
     def visitIf_statement(self, ctx):
         print("\n=== PROCESANDO IF ===")
-        condition_result = self.visit(ctx.expression(0))
+        resultado_condicion = self.visit(ctx.expression(0))
         
         # Crear etiquetas
-        else_label = self.tac.new_label()
-        end_label = self.tac.new_label()
+        etiqueta_sino = self.cdt.nueva_etiqueta()
+        etiqueta_fin = self.cdt.nueva_etiqueta()
         
         # Generar código para condición
-        self.tac.emit('ifFalse', condition_result, None, f"goto {else_label}")
+        self.cdt.emitir('ifFalse', resultado_condicion, None, f"goto {etiqueta_sino}")
         
-        # Bloque then
-        print("\n--- Bloque THEN ---")
-        self.push_scope()
+        # Bloque entonces
+        print("\n--- Bloque ENTONCES ---")
+        self.empujar_ambito()
         self.visit(ctx.block(0))
-        then_scope = self.pop_scope()
-        print(then_scope)
+        ambito_entonces = self.sacar_ambito()
+        print(ambito_entonces)
         
-        self.tac.emit('goto', None, None, end_label)
+        self.cdt.emitir('goto', None, None, etiqueta_fin)
         
-        # Etiqueta else
-        self.tac.emit('label', None, None, else_label)
+        # Etiqueta sino
+        self.cdt.emitir('label', None, None, etiqueta_sino)
         
-        # Bloques elif y else
+        # Bloques sino-si y sino
         for i in range(1, len(ctx.block())):
             if i < len(ctx.expression()):
-                # elif
-                print(f"--- Bloque ELIF {i} ---")
-                elif_condition = self.visit(ctx.expression(i))
-                elif_label = self.tac.new_label()
-                self.tac.emit('ifFalse', elif_condition, None, f"goto {elif_label}")
+                # sino-si
+                print(f"--- Bloque SINO-SI {i} ---")
+                condicion_sinoSi = self.visit(ctx.expression(i))
+                etiqueta_sinoSi = self.cdt.nueva_etiqueta()
+                self.cdt.emitir('ifFalse', condicion_sinoSi, None, f"goto {etiqueta_sinoSi}")
                 
-                self.push_scope()
+                self.empujar_ambito()
                 self.visit(ctx.block(i))
-                elif_scope = self.pop_scope()
-                print(elif_scope)
+                ambito_sinoSi = self.sacar_ambito()
+                print(ambito_sinoSi)
                 
-                self.tac.emit('goto', None, None, end_label)
-                self.tac.emit('label', None, None, elif_label)
+                self.cdt.emitir('goto', None, None, etiqueta_fin)
+                self.cdt.emitir('label', None, None, etiqueta_sinoSi)
             else:
-                # else
-                print("--- Bloque ELSE ---")
-                self.push_scope()
+                # sino
+                print("--- Bloque SINO ---")
+                self.empujar_ambito()
                 self.visit(ctx.block(i))
-                else_scope = self.pop_scope()
-                print(else_scope)
+                ambito_sino = self.sacar_ambito()
+                print(ambito_sino)
         
-        self.tac.emit('label', None, None, end_label)
-        return "if_completed"
+        self.cdt.emitir('label', None, None, etiqueta_fin)
+        return "if_completado"
     
     def visitWhile_statement(self, ctx):
-        print("\n=== PROCESANDO WHILE ===")
-        start_label = self.tac.new_label()
-        end_label = self.tac.new_label()
+        print("\n=== PROCESANDO MIENTRAS ===")
+        etiqueta_inicio = self.cdt.nueva_etiqueta()
+        etiqueta_fin = self.cdt.nueva_etiqueta()
         
-        self.tac.emit('label', None, None, start_label)
-        condition_result = self.visit(ctx.expression())
-        self.tac.emit('ifFalse', condition_result, None, f"goto {end_label}")
+        self.cdt.emitir('label', None, None, etiqueta_inicio)
+        resultado_condicion = self.visit(ctx.expression())
+        self.cdt.emitir('ifFalse', resultado_condicion, None, f"goto {etiqueta_fin}")
         
-        print("--- Bloque WHILE ---")
-        self.push_scope()
+        print("--- Bloque MIENTRAS ---")
+        self.empujar_ambito()
         self.visit(ctx.block())
-        while_scope = self.pop_scope()
-        print(while_scope)
+        ambito_mientras = self.sacar_ambito()
+        print(ambito_mientras)
         
-        self.tac.emit('goto', None, None, start_label)
-        self.tac.emit('label', None, None, end_label)
-        return "while_completed"
+        self.cdt.emitir('goto', None, None, etiqueta_inicio)
+        self.cdt.emitir('label', None, None, etiqueta_fin)
+        return "mientras_completado"
     
     def visitFunction_def(self, ctx):
-        func_name = ctx.ID().getText()
-        print(f"\n=== PROCESANDO FUNCIÓN: {func_name} ===")
+        nombre_func = ctx.ID().getText()
+        print(f"\n=== PROCESANDO FUNCIÓN: {nombre_func} ===")
         
         # Agregar función a la tabla de símbolos global
-        func_symbol = Symbol(func_name, 'function', self.current_scope.scope_level)
-        self.current_scope.add_symbol(func_symbol)
+        simbolo_func = Simbolo(nombre_func, 'función', self.ambito_actual.nivel_ambito)
+        self.ambito_actual.agregar_simbolo(simbolo_func)
         
-        # Crear nuevo scope para la función
-        self.push_scope()
+        # Crear nuevo ámbito para la función
+        self.empujar_ambito()
         
         # Agregar parámetros a la tabla de símbolos
         if ctx.parameters():
-            params = self.visit(ctx.parameters())
-            for param in params:
-                symbol = Symbol(param, 'parameter', self.current_scope.scope_level)
-                self.current_scope.add_symbol(symbol)
+            parametros = self.visit(ctx.parameters())
+            for parametro in parametros:
+                simbolo = Simbolo(parametro, 'parámetro', self.ambito_actual.nivel_ambito)
+                self.ambito_actual.agregar_simbolo(simbolo)
         
         # Generar etiqueta para la función
-        self.tac.emit('label', None, None, f"func_{func_name}")
+        self.cdt.emitir('label', None, None, f"func_{nombre_func}")
         
         # Procesar el cuerpo de la función
         self.visit(ctx.block())
         
-        # Si no hay return explícito dentro del bloque, agregar uno implícito
-        has_return = False
-        # Un bloque contiene varias sentencias; comprobar si alguna es un return
+        # Si no hay retorno explícito dentro del bloque, agregar uno implícito
+        hay_retorno = False
+        # Un bloque contiene varias sentencias; comprobar si alguna es un retorno
         try:
-            for stmt in ctx.block().statement():
-                if hasattr(stmt, 'return_statement') and stmt.return_statement() is not None:
-                    has_return = True
+            for sentencia in ctx.block().statement():
+                if hasattr(sentencia, 'return_statement') and sentencia.return_statement() is not None:
+                    hay_retorno = True
                     break
         except Exception:
-            # En caso de estructuras inesperadas, asumimos que no hay return
-            has_return = False
+            # En caso de estructuras inesperadas, asumimos que no hay retorno
+            hay_retorno = False
 
-        if not has_return:
-            self.tac.emit('return', None, None, None)
+        if not hay_retorno:
+            self.cdt.emitir('return', None, None, None)
         
-        # Mostrar tabla de símbolos de la función y restaurar scope
-        func_scope = self.pop_scope()
-        print(func_scope)
+        # Mostrar tabla de símbolos de la función y restaurar ámbito
+        ambito_func = self.sacar_ambito()
+        print(ambito_func)
         
-        return func_name
+        return nombre_func
     
     def visitParameters(self, ctx):
-        params = []
-        for param in ctx.ID():
-            params.append(param.getText())
-        print(f"PARÁMETROS: {params}")
-        return params
+        parametros = []
+        for parametro in ctx.ID():
+            parametros.append(parametro.getText())
+        print(f"PARÁMETROS: {parametros}")
+        return parametros
     
     def visitReturn_statement(self, ctx):
         if ctx.expression():
-            return_value = self.visit(ctx.expression())
-            self.tac.emit('return', return_value, None, None)
-            print(f"RETURN: {return_value}")
+            valor_retorno = self.visit(ctx.expression())
+            self.cdt.emitir('return', valor_retorno, None, None)
+            print(f"RETORNO: {valor_retorno}")
         else:
-            self.tac.emit('return', None, None, None)
-            print("RETURN: None")
-        return "return"
+            self.cdt.emitir('return', None, None, None)
+            print("RETORNO: None")
+        return "retorno"
     
     def visitBlock(self, ctx):
-        results = []
-        for stmt in ctx.statement():
-            results.append(self.visit(stmt))
-        return results
+        resultados = []
+        for sentencia in ctx.statement():
+            resultados.append(self.visit(sentencia))
+        return resultados
 
 
-def compile_python_code(code):
+def compilar_codigo_python(codigo):
     """Función principal para compilar código Python"""
     print("=" * 50)
     print("COMPILADOR PYTHON - ANTLR4")
     print("=" * 50)
     print("CÓDIGO FUENTE:")
-    print(code)
+    print(codigo)
     print("=" * 50)
     # Eliminar líneas en blanco iniciales y finales que pueden producir errores de parseo
-    code = code.strip('\n')
+    codigo = codigo.strip('\n')
     
     # Crear el lexer y parser
-    input_stream = antlr4.InputStream(code)
-    lexer = PythonGrammarLexer(input_stream)
-    token_stream = antlr4.CommonTokenStream(lexer)
-    parser = PythonGrammarParser(token_stream)
+    flujo_entrada = antlr4.InputStream(codigo)
+    lexer = PythonGrammarLexer(flujo_entrada)
+    flujo_tokens = antlr4.CommonTokenStream(lexer)
+    parser = PythonGrammarParser(flujo_tokens)
     
     # Parsear el código
-    tree = parser.program()
+    arbol = parser.program()
     
     # Visitar el AST
-    visitor = PythonVisitor()
-    visitor.visit(tree)
+    visitador = VisitadorPython()
+    visitador.visit(arbol)
     
     # Mostrar resultados
     print("\n" + "=" * 50)
     print("RESULTADOS FINALES")
     print("=" * 50)
     
-    print(visitor.symbol_table)
+    print(visitador.tabla_simbolos)
     
     print("\n=== CÓDIGO DE TRES DIRECCIONES ===")
-    tac_code = visitor.tac.get_code()
-    print(tac_code)
+    codigo_cdt = visitador.cdt.obtener_codigo()
+    print(codigo_cdt)
     
-    return visitor.symbol_table, tac_code
+    return visitador.tabla_simbolos, codigo_cdt
 
 # Ejemplos de uso
 if __name__ == "__main__":
     # Ejemplo 1: Código simple
-    with open("ejemplos/test2.py", "r") as file: 
-        code = file.read()
-        compile_python_code(code)   
+    with open("ejemplos/test2.py", "r") as archivo: 
+        codigo = archivo.read()
+        compilar_codigo_python(codigo)   
